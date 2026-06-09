@@ -76,8 +76,8 @@ export class AdminService {
     const where: Prisma.UserWhereInput = search
       ? {
           OR: [
-            { email: { contains: search, mode: 'insensitive' } },
-            { username: { contains: search, mode: 'insensitive' } },
+            { email: { contains: search } },
+            { username: { contains: search } },
           ],
         }
       : {};

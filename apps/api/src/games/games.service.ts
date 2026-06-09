@@ -396,7 +396,7 @@ export class GamesService {
 
     let won = false;
     let payoutMult = 0;
-    const details: Record<string, unknown> = { game: dto.game, bet };
+    const details: Record<string, Prisma.InputJsonValue> = { game: dto.game, bet };
 
     switch (dto.game) {
       case 'coinflip': {

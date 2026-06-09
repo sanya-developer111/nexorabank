@@ -133,7 +133,6 @@ export class BootstrapService implements OnModuleInit {
           premiumOnly: true,
         },
       ],
-      skipDuplicates: true,
     });
   }
 

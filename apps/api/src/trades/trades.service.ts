@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Decimal } from '@prisma/client/runtime/library';
 import { AccountType, TransactionType } from '@prisma/client';
 import { WalletOperationsService } from '../common/services/wallet-operations.service';
 import { toNumber } from '../common/utils/decimal.util';
@@ -146,8 +147,8 @@ export class TradesService {
       toItemId: string | null;
       fromQty: number;
       toQty: number;
-      fromNexAmount: unknown;
-      toNexAmount: unknown;
+      fromNexAmount: Decimal | number | string | null;
+      toNexAmount: Decimal | number | string | null;
       message: string | null;
       fromUser?: { username: string; displayName: string };
       toUser?: { username: string; displayName: string };
