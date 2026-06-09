@@ -1,0 +1,49 @@
+# Render Blueprint для NEXORA
+# Документация: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: nexora-api
+    runtime: node
+    region: frankfurt
+    plan: free
+    rootDir: apps/api
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npx prisma db push && node dist/main.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      - key: DATABASE_URL
+        value: file:./dev.db
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        sync: false
+      - key: ADMIN_EMAIL
+        value: admin@nexora.io
+      - key: ADMIN_PASSWORD
+        sync: false
+    disk:
+      name: nexora-sqlite
+      mountPath: /opt/render/project/src/apps/api/prisma
+      sizeGB: 1
+
+  - type: web
+    name: nexora-web
+    runtime: node
+    region: frankfurt
+    plan: free
+    rootDir: apps/web
+    buildCommand: cd ../.. && npm install && npm run build --workspace=@nexora/shared && npm run build --workspace=@nexora/web
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
+      - key: NEXT_PUBLIC_WS_URL
+        sync: false

@@ -1,0 +1,33 @@
+{
+  "name": "nexora",
+  "version": "1.0.0",
+  "private": true,
+  "description": "NEXORA — Digital Financial Universe",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
+    "dev:lan": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
+    "dev:api": "npm run dev --workspace=@nexora/api",
+    "dev:web": "npm run dev --workspace=@nexora/web",
+    "build": "npm run build --workspace=@nexora/shared && npm run build --workspaces --if-present",
+    "predev": "npm run build --workspace=@nexora/shared",
+    "db:generate": "npm run db:generate --workspace=@nexora/api",
+    "db:migrate": "npm run db:migrate --workspace=@nexora/api",
+    "db:seed": "npm run db:seed --workspace=@nexora/api",
+    "db:studio": "npm run db:studio --workspace=@nexora/api"
+  },
+  "overrides": {
+    "react-is": "18.3.1"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "sucrase": "^3.35.1",
+    "ts-interface-checker": "^1.0.2"
+  },
+  "dependencies": {
+    "lodash": "^4.18.1"
+  }
+}
