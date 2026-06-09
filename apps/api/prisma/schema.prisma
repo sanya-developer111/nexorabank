@@ -1,0 +1,835 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  MODERATOR
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum AccountType {
+  MAIN
+  SAVINGS
+  INVESTMENT
+  BUSINESS
+  ESCROW
+}
+
+enum Rank {
+  INITIATE
+  EXPLORER
+  TRADER
+  INVESTOR
+  TYCOON
+  MAGNATE
+  LEGEND
+  SOVEREIGN
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  TRANSFER
+  CASHBACK
+  REWARD
+  PURCHASE
+  SALE
+  INVESTMENT
+  DIVIDEND
+  BURN
+  FEE
+  REFERRAL
+  QUEST
+  WHEEL
+  CASE
+  CHEST
+  AUCTION
+  CONTRACT
+  BUSINESS
+  TOURNAMENT
+  PREMIUM
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+  FLAGGED
+}
+
+enum QuestPeriod {
+  DAILY
+  WEEKLY
+  SEASONAL
+  SPECIAL
+}
+
+enum ItemRarity {
+  COMMON
+  UNCOMMON
+  RARE
+  EPIC
+  LEGENDARY
+  MYTHIC
+}
+
+enum AssetType {
+  STOCK
+  INDEX
+  CRYPTO
+  NEXORA_ASSET
+}
+
+enum ListingStatus {
+  ACTIVE
+  SOLD
+  CANCELLED
+  EXPIRED
+}
+
+enum AuctionStatus {
+  ACTIVE
+  ENDED
+  CANCELLED
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  BLOCKED
+}
+
+enum ClanRole {
+  MEMBER
+  OFFICER
+  LEADER
+}
+
+enum ContractStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum BusinessType {
+  CAFE
+  TECH
+  MINING
+  TRADING
+  REAL_ESTATE
+  ENTERTAINMENT
+}
+
+enum EconomyEventType {
+  INFLATION
+  DEFLATION
+  BOOM
+  CRASH
+  SEASON
+  HALVING
+  BURN_WEEK
+}
+
+model User {
+  id                String    @id @default(uuid())
+  email             String    @unique
+  username          String    @unique
+  passwordHash      String
+  displayName       String
+  avatar            String?
+  avatarFrame       String?
+  bio               String?
+  role              UserRole  @default(USER)
+  rank              Rank      @default(INITIATE)
+  level             Int       @default(1)
+  xp                Int       @default(0)
+  prestige          Int       @default(0)
+  title             String?
+  isPremium         Boolean   @default(false)
+  premiumUntil      DateTime?
+  twoFactorEnabled  Boolean   @default(false)
+  twoFactorSecret   String?
+  referralCode      String    @unique
+  referredById      String?
+  referredBy        User?     @relation("Referrals", fields: [referredById], references: [id])
+  referrals         User[]    @relation("Referrals")
+  loginStreak       Int       @default(0)
+  lastLoginAt       DateTime?
+  lastDailyClaim    DateTime?
+  wheelSpinsToday   Int       @default(0)
+  lastWheelSpin     DateTime?
+  isBanned          Boolean   @default(false)
+  banReason         String?
+  lastCashbackAt    DateTime?
+  cashbackAccrued   Decimal   @default(0)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  accounts          Account[]
+  transactions      Transaction[]       @relation("UserTransactions")
+  sentTransfers     Transaction[]       @relation("SentTransfers")
+  receivedTransfers Transaction[]       @relation("ReceivedTransfers")
+  achievements      UserAchievement[]
+  questProgress     UserQuest[]
+  inventory         InventoryItem[]
+  portfolio         PortfolioHolding[]
+  listings          MarketplaceListing[]
+  auctions          Auction[]           @relation("AuctionSeller")
+  auctionBids       AuctionBid[]
+  friendshipsSent   Friendship[]        @relation("FriendshipSender")
+  friendshipsRecv   Friendship[]        @relation("FriendshipReceiver")
+  messagesSent      Message[]           @relation("MessageSender")
+  messagesRecv      Message[]           @relation("MessageReceiver")
+  chatMessages      ChatMessage[]
+  clanMemberships   ClanMember[]
+  corporations      CorporationMember[]
+  contractsPosted   Contract[]          @relation("ContractPoster")
+  contractsTaken    Contract[]          @relation("ContractTaker")
+  businesses        Business[]
+  battlePass        BattlePassProgress?
+  tournamentEntries TournamentEntry[]
+  fraudAlerts       FraudAlert[]
+  activityLogs      ActivityLog[]
+  refreshTokens     RefreshToken[]
+  wheelSpins        WheelSpin[]
+  caseOpens         CaseOpen[]
+  chestOpens        ChestOpen[]
+  premiumSubs       PremiumSubscription[]
+  tradesSent        PlayerTrade[]       @relation("TradesSent")
+  tradesReceived    PlayerTrade[]       @relation("TradesReceived")
+  paymentQrs        PaymentQr[]         @relation("PaymentQrCreator")
+  paymentQrsUsed    PaymentQr[]         @relation("PaymentQrPayer")
+  videoWatches      VideoWatch[]
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Account {
+  id        String      @id @default(uuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      AccountType @default(MAIN)
+  balance   Decimal     @default(0)
+  currency  String      @default("NEX")
+  isActive  Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  transactions Transaction[]
+
+  @@unique([userId, type])
+  @@index([userId])
+}
+
+model Transaction {
+  id          String            @id @default(uuid())
+  userId      String
+  user        User              @relation("UserTransactions", fields: [userId], references: [id])
+  accountId   String
+  account     Account           @relation(fields: [accountId], references: [id])
+  type        TransactionType
+  status      TransactionStatus @default(COMPLETED)
+  amount      Decimal
+  fee         Decimal           @default(0)
+  currency    String            @default("NEX")
+  description String?
+  metadata    Json?
+  fromUserId  String?
+  fromUser    User?             @relation("SentTransfers", fields: [fromUserId], references: [id])
+  toUserId    String?
+  toUser      User?             @relation("ReceivedTransfers", fields: [toUserId], references: [id])
+  ipAddress   String?
+  userAgent   String?
+  isSuspicious Boolean          @default(false)
+  createdAt   DateTime          @default(now())
+
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+model CurrencyMetrics {
+  id            String   @id @default("nexium-global")
+  totalSupply   Decimal  @default(1000000000)
+  circulating   Decimal  @default(0)
+  burned        Decimal  @default(0)
+  inflationRate Decimal  @default(0)
+  velocity      Decimal  @default(0)
+  rarityIndex   Decimal  @default(1)
+  updatedAt     DateTime @updatedAt
+}
+
+model EconomyEvent {
+  id          String           @id @default(uuid())
+  type        EconomyEventType
+  title       String
+  description String
+  multiplier  Decimal          @default(1)
+  startsAt    DateTime
+  endsAt      DateTime
+  isActive    Boolean          @default(true)
+  metadata    Json?
+  createdAt   DateTime         @default(now())
+}
+
+model Achievement {
+  id          String   @id @default(uuid())
+  slug        String   @unique
+  name        String
+  description String
+  icon        String
+  xpReward    Int      @default(50)
+  nexReward   Decimal  @default(0)
+  rarity      ItemRarity @default(COMMON)
+  category    String
+  requirement Json?
+  isSecret    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  users UserAchievement[]
+}
+
+model UserAchievement {
+  id            String      @id @default(uuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementId String
+  achievement   Achievement @relation(fields: [achievementId], references: [id])
+  unlockedAt    DateTime    @default(now())
+
+  @@unique([userId, achievementId])
+}
+
+model Quest {
+  id          String      @id @default(uuid())
+  slug        String      @unique
+  title       String
+  description String
+  period      QuestPeriod
+  target      Int         @default(1)
+  action      String
+  nexReward   Decimal     @default(0)
+  xpReward    Int         @default(25)
+  isActive    Boolean     @default(true)
+  seasonId    String?
+  season      Season?     @relation(fields: [seasonId], references: [id])
+  createdAt   DateTime    @default(now())
+
+  progress UserQuest[]
+}
+
+model UserQuest {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questId   String
+  quest     Quest    @relation(fields: [questId], references: [id])
+  progress  Int      @default(0)
+  completed Boolean  @default(false)
+  claimedAt DateTime?
+  resetAt   DateTime @default(now())
+
+  @@unique([userId, questId])
+}
+
+model Season {
+  id          String   @id @default(uuid())
+  name        String
+  number      Int      @unique
+  description String?
+  startsAt    DateTime
+  endsAt      DateTime
+  isActive    Boolean  @default(false)
+  theme       String?
+  createdAt   DateTime @default(now())
+
+  quests      Quest[]
+  battlePass  BattlePass?
+}
+
+model BattlePass {
+  id       String @id @default(uuid())
+  seasonId String @unique
+  season   Season @relation(fields: [seasonId], references: [id])
+  maxTier  Int    @default(50)
+
+  tiers    BattlePassTier[]
+  progress BattlePassProgress[]
+}
+
+model BattlePassTier {
+  id           String     @id @default(uuid())
+  battlePassId String
+  battlePass   BattlePass @relation(fields: [battlePassId], references: [id], onDelete: Cascade)
+  tier         Int
+  xpRequired   Int
+  freeReward   Json?
+  premiumReward Json?
+  isPremium    Boolean    @default(false)
+
+  @@unique([battlePassId, tier])
+}
+
+model BattlePassProgress {
+  id           String     @id @default(uuid())
+  userId       String     @unique
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  battlePassId String
+  battlePass   BattlePass @relation(fields: [battlePassId], references: [id])
+  currentTier  Int        @default(0)
+  currentXp    Int        @default(0)
+  isPremium    Boolean    @default(false)
+  claimedTiers Json
+  updatedAt    DateTime   @updatedAt
+}
+
+model Asset {
+  id          String    @id @default(uuid())
+  symbol      String    @unique
+  name        String
+  type        AssetType
+  price       Decimal
+  change24h   Decimal   @default(0)
+  volume24h   Decimal   @default(0)
+  marketCap   Decimal   @default(0)
+  description String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  priceHistory PriceHistory[]
+  holdings     PortfolioHolding[]
+}
+
+model PriceHistory {
+  id        String   @id @default(uuid())
+  assetId   String
+  asset     Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  price     Decimal
+  volume    Decimal  @default(0)
+  timestamp DateTime @default(now())
+
+  @@index([assetId, timestamp])
+}
+
+model PortfolioHolding {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assetId   String
+  asset     Asset    @relation(fields: [assetId], references: [id])
+  quantity  Decimal
+  avgPrice  Decimal
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, assetId])
+}
+
+model Item {
+  id          String     @id @default(uuid())
+  slug        String     @unique
+  name        String
+  description String?
+  image       String?
+  rarity      ItemRarity @default(COMMON)
+  category    String
+  basePrice   Decimal    @default(0)
+  isTradeable Boolean    @default(true)
+  isLimited   Boolean    @default(false)
+  maxSupply   Int?
+  seasonId    String?
+  effects     Json?
+  createdAt   DateTime   @default(now())
+
+  inventory InventoryItem[]
+  listings  MarketplaceListing[]
+  auctions  Auction[]
+}
+
+model InventoryItem {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemId    String
+  item      Item     @relation(fields: [itemId], references: [id])
+  quantity  Int      @default(1)
+  acquiredAt DateTime @default(now())
+  isEquipped Boolean @default(false)
+
+  @@index([userId])
+}
+
+model MarketplaceListing {
+  id        String        @id @default(uuid())
+  sellerId  String
+  seller    User          @relation(fields: [sellerId], references: [id])
+  itemId    String
+  item      Item          @relation(fields: [itemId], references: [id])
+  price     Decimal
+  quantity  Int           @default(1)
+  status    ListingStatus @default(ACTIVE)
+  createdAt DateTime      @default(now())
+  expiresAt DateTime?
+
+  @@index([status])
+}
+
+model Auction {
+  id          String        @id @default(uuid())
+  sellerId    String
+  seller      User          @relation("AuctionSeller", fields: [sellerId], references: [id])
+  itemId      String
+  item        Item          @relation(fields: [itemId], references: [id])
+  startPrice  Decimal
+  currentBid  Decimal       @default(0)
+  buyoutPrice Decimal?
+  status      AuctionStatus @default(ACTIVE)
+  endsAt      DateTime
+  createdAt   DateTime      @default(now())
+
+  bids AuctionBid[]
+
+  @@index([status, endsAt])
+}
+
+model AuctionBid {
+  id        String   @id @default(uuid())
+  auctionId String
+  auction   Auction  @relation(fields: [auctionId], references: [id], onDelete: Cascade)
+  bidderId  String
+  bidder    User     @relation(fields: [bidderId], references: [id])
+  amount    Decimal
+  createdAt DateTime @default(now())
+
+  @@index([auctionId])
+}
+
+model Friendship {
+  id         String           @id @default(uuid())
+  senderId   String
+  sender     User             @relation("FriendshipSender", fields: [senderId], references: [id])
+  receiverId String
+  receiver   User             @relation("FriendshipReceiver", fields: [receiverId], references: [id])
+  status     FriendshipStatus @default(PENDING)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  @@unique([senderId, receiverId])
+}
+
+model Message {
+  id         String   @id @default(uuid())
+  senderId   String
+  sender     User     @relation("MessageSender", fields: [senderId], references: [id])
+  receiverId String
+  receiver   User     @relation("MessageReceiver", fields: [receiverId], references: [id])
+  content    String
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([receiverId, isRead])
+}
+
+model ChatRoom {
+  id        String        @id @default(uuid())
+  name      String
+  slug      String        @unique
+  isGlobal  Boolean       @default(false)
+  clanId    String?
+  createdAt DateTime      @default(now())
+
+  messages ChatMessage[]
+}
+
+model ChatMessage {
+  id        String   @id @default(uuid())
+  roomId    String
+  room      ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([roomId, createdAt])
+}
+
+model Clan {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  tag         String   @unique
+  description String?
+  emblem      String?
+  level       Int      @default(1)
+  treasury    Decimal  @default(0)
+  xp          Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  members ClanMember[]
+  wars    ClanWar[]    @relation("ClanWarAttacker")
+  warsDef ClanWar[]    @relation("ClanWarDefender")
+}
+
+model ClanMember {
+  id       String   @id @default(uuid())
+  clanId   String
+  clan     Clan     @relation(fields: [clanId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User     @relation(fields: [userId], references: [id])
+  role     ClanRole @default(MEMBER)
+  joinedAt DateTime @default(now())
+
+  @@unique([clanId, userId])
+}
+
+model ClanWar {
+  id           String   @id @default(uuid())
+  attackerId   String
+  attacker     Clan     @relation("ClanWarAttacker", fields: [attackerId], references: [id])
+  defenderId   String
+  defender     Clan     @relation("ClanWarDefender", fields: [defenderId], references: [id])
+  attackerScore Int     @default(0)
+  defenderScore Int     @default(0)
+  startsAt     DateTime
+  endsAt       DateTime
+  winnerId     String?
+  createdAt    DateTime @default(now())
+}
+
+model Corporation {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  ticker      String   @unique
+  description String?
+  valuation   Decimal  @default(0)
+  revenue     Decimal  @default(0)
+  createdAt   DateTime @default(now())
+
+  members CorporationMember[]
+}
+
+model CorporationMember {
+  id            String      @id @default(uuid())
+  corporationId String
+  corporation   Corporation @relation(fields: [corporationId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User        @relation(fields: [userId], references: [id])
+  role          String      @default("employee")
+  shares        Decimal     @default(0)
+  joinedAt      DateTime    @default(now())
+
+  @@unique([corporationId, userId])
+}
+
+model Contract {
+  id          String         @id @default(uuid())
+  posterId    String
+  poster      User           @relation("ContractPoster", fields: [posterId], references: [id])
+  takerId     String?
+  taker       User?          @relation("ContractTaker", fields: [takerId], references: [id])
+  title       String
+  description String
+  reward      Decimal
+  status      ContractStatus @default(OPEN)
+  deadline    DateTime?
+  createdAt   DateTime       @default(now())
+  completedAt DateTime?
+}
+
+model Business {
+  id         String       @id @default(uuid())
+  ownerId    String
+  owner      User         @relation(fields: [ownerId], references: [id])
+  name       String
+  type       BusinessType
+  level      Int          @default(1)
+  revenue    Decimal      @default(0)
+  upkeep     Decimal      @default(10)
+  lastCollect DateTime?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+}
+
+model Tournament {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  prizePool   Decimal
+  entryFee    Decimal  @default(0)
+  maxPlayers  Int      @default(100)
+  startsAt    DateTime
+  endsAt      DateTime
+  isActive      Boolean  @default(true)
+  premiumOnly   Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  entries TournamentEntry[]
+}
+
+model TournamentEntry {
+  id           String     @id @default(uuid())
+  tournamentId String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id])
+  userId       String
+  user         User       @relation(fields: [userId], references: [id])
+  score        Int        @default(0)
+  rank         Int?
+  joinedAt     DateTime   @default(now())
+
+  @@unique([tournamentId, userId])
+}
+
+model WheelSpin {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  prize     String
+  amount    Decimal
+  createdAt DateTime @default(now())
+}
+
+model CaseOpen {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  caseType  String
+  itemWon   String
+  rarity    ItemRarity
+  createdAt DateTime @default(now())
+}
+
+model ChestOpen {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  chestType String
+  rewards   Json
+  createdAt DateTime @default(now())
+}
+
+model PremiumSubscription {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  plan      String   @default("NEXORA_PLUS")
+  startsAt  DateTime @default(now())
+  endsAt    DateTime
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model FraudAlert {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String
+  severity  String
+  details   Json?
+  resolved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model ActivityLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  entity    String?
+  entityId  String?
+  metadata  Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model PlatformSettings {
+  id    String @id @default("platform")
+  data  Json
+  updatedAt DateTime @updatedAt
+}
+
+model PlatformVideo {
+  id          String   @id @default(uuid())
+  slug        String   @unique
+  title       String
+  description String
+  videoUrl    String
+  videoType   String   @default("youtube")
+  durationSec Int
+  baseReward  Decimal  @default(50)
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  watches VideoWatch[]
+}
+
+model VideoWatch {
+  id        String        @id @default(uuid())
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  videoId   String
+  video     PlatformVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  reward    Decimal       @default(0)
+  watchedAt DateTime      @default(now())
+
+  @@index([userId, watchedAt])
+}
+
+model PlayerTrade {
+  id            String   @id @default(uuid())
+  type          String
+  status        String   @default("PENDING")
+  fromUserId    String
+  fromUser      User     @relation("TradesSent", fields: [fromUserId], references: [id])
+  toUserId      String
+  toUser        User     @relation("TradesReceived", fields: [toUserId], references: [id])
+  fromItemId    String?
+  fromQty       Int      @default(0)
+  toItemId      String?
+  toQty         Int      @default(0)
+  fromNexAmount Decimal  @default(0)
+  toNexAmount   Decimal  @default(0)
+  nexAmount     Decimal  @default(0)
+  message       String?
+  createdAt     DateTime @default(now())
+
+  @@index([fromUserId])
+  @@index([toUserId, status])
+}
+
+model PaymentQr {
+  id          String    @id @default(uuid())
+  creatorId   String
+  creator     User      @relation("PaymentQrCreator", fields: [creatorId], references: [id])
+  code        String    @unique
+  amount      Decimal
+  description String?
+  expiresAt   DateTime
+  isUsed      Boolean   @default(false)
+  usedById    String?
+  payer       User?     @relation("PaymentQrPayer", fields: [usedById], references: [id])
+  usedAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([creatorId])
+}

@@ -1,0 +1,60 @@
+{
+  "name": "@nexora/api",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "ts-node-dev --respawn --transpile-only src/main.ts",
+    "start": "node dist/main",
+    "start:prod": "node dist/main",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:push": "prisma db push",
+    "db:seed": "ts-node prisma/seed.ts",
+    "db:studio": "prisma studio"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.0.7",
+    "@nestjs/config": "^4.0.0",
+    "@nestjs/core": "^11.0.7",
+    "@nestjs/jwt": "^11.0.0",
+    "@nestjs/passport": "^11.0.5",
+    "@nestjs/platform-express": "^11.0.7",
+    "@nestjs/platform-socket.io": "^11.0.7",
+    "@nestjs/schedule": "^5.0.1",
+    "@nestjs/throttler": "^6.4.0",
+    "@nestjs/websockets": "^11.0.7",
+    "@nexora/shared": "*",
+    "@prisma/client": "^6.3.1",
+    "bcrypt": "^5.1.1",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.4",
+    "effect": "^3.21.3",
+    "otplib": "^12.0.1",
+    "passport": "^0.7.0",
+    "passport-jwt": "^4.0.1",
+    "qrcode": "^1.5.4",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1",
+    "socket.io": "^4.8.1",
+    "uuid": "^11.0.5",
+    "validator": "^13.15.35"
+  },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.2",
+    "@nestjs/schematics": "^11.0.0",
+    "@types/bcrypt": "^5.0.2",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.7",
+    "@types/passport-jwt": "^4.0.1",
+    "@types/qrcode": "^1.5.5",
+    "@types/uuid": "^10.0.0",
+    "prisma": "^6.3.1",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.7.3"
+  }
+}
