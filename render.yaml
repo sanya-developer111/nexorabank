@@ -1,49 +1,39 @@
-# Render Blueprint для NEXORA
-# Документация: https://render.com/docs/blueprint-spec
+# NEXORA — деплой на Render (https://render.com)
+# New → Blueprint → подключите GitHub-репозиторий
+#
+# ВАЖНО: на plan: free нельзя использовать disk: — будет ошибка Blueprint.
+# SQLite (prod.db) живёт во временной файловой системе; при редеплое данные могут сброситься.
 
 services:
   - type: web
     name: nexora-api
     runtime: node
-    region: frankfurt
     plan: free
-    rootDir: apps/api
-    buildCommand: npm install && npx prisma generate && npm run build
-    startCommand: npx prisma db push && node dist/main.js
+    buildCommand: npm install && npm run build --workspace=@nexora/shared && cd apps/api && npx prisma generate && npm run build
+    startCommand: cd apps/api && npx prisma db push && node dist/main.js
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 4000
       - key: DATABASE_URL
-        value: file:./dev.db
+        value: file:./prod.db
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET
         generateValue: true
-      - key: CORS_ORIGIN
-        sync: false
-      - key: ADMIN_EMAIL
-        value: admin@nexora.io
-      - key: ADMIN_PASSWORD
-        sync: false
-    disk:
-      name: nexora-sqlite
-      mountPath: /opt/render/project/src/apps/api/prisma
-      sizeGB: 1
+      # После первого деплоя замените на реальные URL с https:// (см. DEPLOY.md)
+      - key: WEB_URL
+        value: https://nexora-web.onrender.com
+      - key: CORS_ORIGINS
+        value: https://nexora-web.onrender.com
 
   - type: web
     name: nexora-web
     runtime: node
-    region: frankfurt
     plan: free
-    rootDir: apps/web
-    buildCommand: cd ../.. && npm install && npm run build --workspace=@nexora/shared && npm run build --workspace=@nexora/web
-    startCommand: npm run start
+    buildCommand: npm install && npm run build --workspace=@nexora/shared && cd apps/web && npm run build
+    startCommand: cd apps/web && npm run start -- -p $PORT
     envVars:
-      - key: NODE_ENV
-        value: production
       - key: NEXT_PUBLIC_API_URL
-        sync: false
+        value: https://nexora-api.onrender.com
       - key: NEXT_PUBLIC_WS_URL
-        sync: false
+        value: https://nexora-api.onrender.com
