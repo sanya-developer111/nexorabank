@@ -255,6 +255,18 @@ Render **не даёт** постоянный диск на бесплатном
   `CORS_ORIGINS=https://nexora-web.onrender.com`  
   (точный URL сайта, с `https://`, без слэша в конце)
 
+### `Cannot find module .../dist/main.js`
+
+Сборка прошла, но стартовая команда ищет файл не там. Исправление в репозитории: `rootDir: "./src"` в `apps/api/tsconfig.json` и старт `node dist/main`.
+
+В Render → **nexora-api** → **Start Command** должно быть:
+
+```bash
+cd apps/api && npx prisma db push && node dist/main
+```
+
+Не `dist/apps/api/src/main.js` и не `dist/main.js` со старым tsconfig.
+
 ### API падает при старте
 
 - **Logs** → nexora-api → смотрите ошибку Prisma
@@ -282,7 +294,7 @@ Render **не даёт** постоянный диск на бесплатном
 |------|----------|
 | Root Directory | *(пусто — корень репо)* |
 | Build Command | `npm install && npm run build --workspace=@nexora/shared && cd apps/api && npx prisma generate && npm run build` |
-| Start Command | `cd apps/api && npx prisma db push && node dist/main.js` |
+| Start Command | `cd apps/api && npx prisma db push && node dist/main` |
 | Instance type | Free |
 
 Environment — как в шаге 4 для API + `DATABASE_URL=file:./prod.db`, `NODE_ENV=production`.
